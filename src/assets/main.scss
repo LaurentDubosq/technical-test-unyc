@@ -1,0 +1,57 @@
+body {
+  color: black;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 16px;
+  line-height: 1.563;
+  display: flex;
+  justify-content: center;
+}
+
+#app {
+  max-width: 1024px;
+}
+
+ul {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+button {
+  padding: 10px;
+  border: none;
+  box-shadow: none;
+  border-radius: 5px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+}
+
+input {
+  border-radius: 5px;
+  padding: 0;
+}
+
+.btn--primary {
+  background-color: green;
+  color: white;
+}
+
+// Reset the focus indicator for keyboard navigation only
+*:focus-visible,
+.focus-visible {
+  outline: 3px solid black;
+}
+
+// Hide an element without affecting its accessibility or search engine parser consideration
+.sr-only {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  margin: -10px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+  left: 0;
+}
