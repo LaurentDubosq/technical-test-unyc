@@ -12,6 +12,7 @@ const router = useRouter()
 const goBackOrDefault = () => {
   // Go back in history if the previous page is part of our app (e.g., "/characters").
   // If not, redirect to the "/characters" page (the homepage of our app).
+  console.log(window.history.state)
   if (window.history.state?.back?.includes('/characters')) {
     router.back()
   } else {

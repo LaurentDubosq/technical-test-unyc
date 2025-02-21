@@ -86,7 +86,7 @@ const filterResults = async (filterValue: string, filterType: string) => {
   /* 2. Update the route to display the data associated to the params */
   //////////////////////////////////////////////////////////////////////
 
-  router.push(newQueryParams)
+  router.push('/characters' + newQueryParams)
 }
 
 /*************/
