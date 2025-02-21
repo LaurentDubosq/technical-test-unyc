@@ -1,6 +1,7 @@
-<script setup>
+<script setup lang="ts">
 import CharacterItem from './CharacterItem.vue'
-const { characters } = defineProps({ characters: { type: Array, required: true } })
+
+const { characters } = defineProps<{ characters: Character[] }>()
 </script>
 
 <template>

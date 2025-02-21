@@ -1,11 +1,11 @@
 // Composable to fetch external data
-export const useFetch = async (url, options) => {
+export const useFetch = async <T>(url: string, options?: RequestInit): Promise<T | undefined> => {
   try {
     const response = await fetch(url, options)
     // Handle both successful responses and 'not found' responses
     if (response.ok || response.status === 404) {
       const data = await response.json()
-      return data
+      return data as T
     } else {
       const errorMessage = `${response.status} - ${response.statusText}`
       throw new Error(errorMessage)

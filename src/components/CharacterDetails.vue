@@ -1,5 +1,23 @@
-<script setup>
-const { character } = defineProps({ character: { type: Object, required: true } })
+<script setup lang="ts">
+import { useRouter } from 'vue-router'
+
+const { character } = defineProps<{ character: Character }>()
+
+/**************/
+/* Navigation */
+/**************/
+
+const router = useRouter()
+
+const goBackOrDefault = () => {
+  // Go back in history if the previous page is part of our app (e.g., "/characters").
+  // If not, redirect to the "/characters" page (the homepage of our app).
+  if (window.history.state?.back?.includes('/characters')) {
+    router.back()
+  } else {
+    router.push('/characters') // Redirect to the "/characters" page (home page).
+  }
+}
 </script>
 
 <template>
@@ -25,9 +43,7 @@ const { character } = defineProps({ character: { type: Object, required: true } 
         <strong>Location : {{ character.location.name }}</strong>
       </li>
     </ul>
-    <RouterLink to="/characters">
-      <button class="character__button btn--primary">Back</button>
-    </RouterLink>
+    <button class="character__button btn--primary" @click="goBackOrDefault">Back</button>
   </div>
 </template>
 

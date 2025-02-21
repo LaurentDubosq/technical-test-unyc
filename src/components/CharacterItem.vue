@@ -1,7 +1,5 @@
-<script setup>
-import { RouterLink } from 'vue-router'
-
-const { character } = defineProps({ character: { type: Object, required: true } })
+<script setup lang="ts">
+const { character } = defineProps<{ character: Character }>()
 </script>
 
 <template>

@@ -1,9 +1,21 @@
-<script setup>
-const { currentSelectedValue, options, name } = defineProps({
-  currentSelectedValue: { type: String },
-  options: { type: Array, required: true },
-  name: { type: String, required: true },
-})
+<script setup lang="ts">
+const { currentSelectedValue, options, name } = defineProps<{
+  currentSelectedValue?: string
+  options: CharacterStatus[] | CharacterGender[]
+  name: string
+}>()
+
+const emit = defineEmits(['update-selected-value'])
+
+const handleChange = (event: Event) => {
+  // Assert the event target is a select
+  const select: HTMLSelectElement = event.target as HTMLSelectElement
+
+  // Emit its value
+  if (select) {
+    emit('update-selected-value', select.value)
+  }
+}
 </script>
 
 <template>
@@ -12,7 +24,7 @@ const { currentSelectedValue, options, name } = defineProps({
     <select
       class="search-filter__select"
       :value="currentSelectedValue"
-      @change="(event) => $emit('update-selected-value', event.target.value)"
+      @change="handleChange"
       :name="name"
       :id="`${name}-select`"
     >

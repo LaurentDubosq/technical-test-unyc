@@ -1,14 +1,24 @@
-<script setup>
-const { currentName } = defineProps({ currentName: { type: String } })
+<script setup lang="ts">
+const { currentName } = defineProps<{ currentName?: string }>()
 
-const emit = defineEmits(['submit']) // use defineEmits to avoid @submit to be used twice with an unwanted value on the second triggering
+const emit = defineEmits(['submit'])
+
+const handleSubmit = (event: Event) => {
+  // Assert the event target is a form
+  const form: HTMLFormElement = event.target as HTMLFormElement
+
+  // Get the name field value
+  const input: HTMLInputElement = form.querySelector('input') as HTMLInputElement
+
+  // Emit its value
+  if (input) {
+    emit('submit', input.value)
+  }
+}
 </script>
 
 <template>
-  <form
-    class="search-form"
-    @submit.prevent="(event) => emit('submit', event.target.querySelector('input').value)"
-  >
+  <form class="search-form" @submit.prevent="handleSubmit">
     <label for="search-input" class="sr-only">Character's name</label>
     <input
       id="search-input"

@@ -1,8 +1,5 @@
-<script setup>
-const { currentPage, totalPages } = defineProps({
-  currentPage: { type: Number, required: true },
-  totalPages: { type: Number, required: true },
-})
+<script setup lang="ts">
+const { currentPage, totalPages } = defineProps<{ currentPage: number; totalPages: number }>()
 </script>
 
 <template>

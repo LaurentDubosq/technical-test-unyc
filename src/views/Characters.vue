@@ -1,135 +1,157 @@
-<script setup>
+<script setup lang="ts">
 import CharacterList from '@/components/CharacterList.vue'
 import Pagination from '@/components/Pagination.vue'
 import SearchFilter from '@/components/SearchFilter.vue'
 import SearchForm from '@/components/SearchForm.vue'
 import { useFetch } from '@/composables/useFetch'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref, watch, type ComputedRef, type Ref } from 'vue'
 import { useQueryResultsHistoryStore } from '@/stores/queryResultsHistory'
-import { useCurrentQueryStateStore } from '@/stores/currentQueryState'
+import { useRouter, useRoute } from 'vue-router'
+const characterApiBaseUrl: string = import.meta.env.VITE_CHARACTER_API_BASE_URL
 
-const characterApiUrl = 'https://rickandmortyapi.com/api/character'
-const queryResults = ref()
+/**********/
+/* States */
+/**********/
+
+const router = useRouter()
+const route = useRoute()
+const queryResults: Ref<CharacterAPIResponse | undefined> = ref()
 const queryResultsHistoryStore = useQueryResultsHistoryStore()
-const currentQueryStateStore = useCurrentQueryStateStore()
 
-const totalPages = computed(() => queryResults.value?.info?.pages)
+/************/
+/* Computed */
+/************/
 
-/******************/
-/* Initial Render */
-/******************/
+// Compute the total pages number from the current query results
+const totalPages: ComputedRef<number | undefined> = computed(() =>
+  queryResults.value && 'info' in queryResults.value ? queryResults.value.info.pages : undefined,
+)
 
-onMounted(async () => {
-  /////////////////////////////////////////////////////////
-  /* Display last query results or fetch initial results */
-  /////////////////////////////////////////////////////////
+// Compute the current parameters from the URL
+const currentName: ComputedRef<string> = computed(() => route.query.name as string)
+const currentStatus: ComputedRef<string> = computed(() => route.query.status as string)
+const currentGender: ComputedRef<string> = computed(() => route.query.gender as string)
+const currentPage: ComputedRef<string> = computed(() => (route.query.page as string) || '1')
 
-  if (currentQueryStateStore.url) {
-    // Get the last result stored
-    const result = queryResultsHistoryStore.state.find(
-      (query) => query.url === currentQueryStateStore.url,
-    ).result
+/***********/
+/* Methods */
+/***********/
 
-    // Update the view with the data
-    queryResults.value = result
-  } else {
-    const queryURL = characterApiUrl + '?page=1'
+const getAndDisplayData = async (params: string) => {
+  //////////////////////
+  /* 1. Get the data  */
+  //////////////////////
 
-    // Get and display "all character(s)" at initial render
-    queryResults.value = await useFetch(queryURL)
+  const queryUrl: string = characterApiBaseUrl + params
+  let results: CharacterAPIResponse | undefined
 
-    // Store the query url and data
-    queryResultsHistoryStore.addQueryResults({ url: queryURL, result: queryResults.value })
-
-    // Store the current query state
-    currentQueryStateStore.updateURL(queryURL)
-  }
-})
-
-/*******************/
-/* Filtering Logic */
-/*******************/
-
-const filterResults = async (queryFilterValue = '', queryFilterType) => {
-  ////////////////////////////////
-  /* 1. Build the new query URL */
-  ////////////////////////////////
-
-  // Get current params
-  const params = new URLSearchParams(new URL(currentQueryStateStore.url).search)
-
-  // Update params with new filter informations
-  params.set(queryFilterType, queryFilterValue)
-  if (queryFilterType === 'name' || queryFilterType === 'status' || queryFilterType === 'gender') {
-    params.set('page', '1')
-  } // go back to page 1 when search name, status filter or gender filter has been changed
-
-  // Create the new queryURL
-  const newQueryUrl = `${characterApiUrl}${params ? '?' + params.toString() : ''}`
-
-  //////////////////////////////////
-  /* 2. Get the new query's data  */
-  //////////////////////////////////
-
-  let result
-
-  /* Get data from the store or from the API */
-  if (queryResultsHistoryStore.state.some((query) => query.url === newQueryUrl)) {
+  if (queryResultsHistoryStore.isQueryExists(queryUrl)) {
     // Get the data from the store
-    result = queryResultsHistoryStore.state.find((query) => query.url === newQueryUrl).result
+    results = queryResultsHistoryStore.getQueryResults(queryUrl)
   } else {
     // Get the data from the API
-    result = await useFetch(newQueryUrl)
+    results = await useFetch(queryUrl)
 
     // Store the new data
-    queryResultsHistoryStore.addQueryResults({ url: newQueryUrl, result })
+    if (results) {
+      queryResultsHistoryStore.addQueryResults({ url: queryUrl, results })
+    }
   }
 
   ////////////////////////
-  /* 3. Update the view */
+  /* 2. Update the view */
   ////////////////////////
 
-  queryResults.value = result
-
-  //////////////////////////////////////////////////
-  /* 4. Update the current query URL in the store */
-  //////////////////////////////////////////////////
-
-  currentQueryStateStore.updateURL(newQueryUrl)
+  queryResults.value = results
 }
+
+const filterResults = async (filterValue: string, filterType: string) => {
+  /////////////////////////////
+  /* 1. Build the new params */
+  /////////////////////////////
+
+  // Get current params
+  const newParams: URLSearchParams = new URLSearchParams(route.query as Record<string, string>)
+
+  // Update new params with new filter informations
+  newParams.set(filterType, filterValue)
+  if (filterType === 'name' || filterType === 'status' || filterType === 'gender') {
+    newParams.delete('page')
+  } // ensure page 1 content is displayed
+
+  // Build the complete new query params
+  const newQueryParams: string = newParams ? '?' + newParams.toString() : ''
+
+  //////////////////////////////////////////////////////////////////////
+  /* 2. Update the route to display the data associated to the params */
+  //////////////////////////////////////////////////////////////////////
+
+  router.push(newQueryParams)
+}
+
+/*************/
+/* Utilities */
+/*************/
+
+const isCurrentParamsExists = () => Object.keys(route.query).length > 0
+
+/************/
+/* Watchers */
+/************/
+
+// Watch the route to display its corresponding data
+watch(
+  () => route.fullPath,
+  async () => {
+    ///////////////////////////////
+    /* 1. Get the current params */
+    ///////////////////////////////
+
+    let params: string = ''
+
+    // Get current params if exits
+    if (isCurrentParamsExists()) {
+      params = '?' + new URLSearchParams(route.query as Record<string, string>).toString()
+    }
+
+    ///////////////////////////////////////////////////
+    /* 2. Display the data associated to the params  */
+    ///////////////////////////////////////////////////
+
+    getAndDisplayData(params)
+  },
+  { immediate: true },
+)
 </script>
 
 <template>
   <div class="characters">
-    <SearchForm
-      :currentName="currentQueryStateStore.currentName"
-      @submit="(newName) => filterResults(newName, 'name')"
-    />
+    <SearchForm :currentName @submit="(newName) => filterResults(newName, 'name')" />
     <div class="characters__filters-container">
       <SearchFilter
-        :currentSelectedValue="currentQueryStateStore.currentStatus"
-        :options="['alive', 'dead', 'unknow']"
+        :currentSelectedValue="currentStatus"
+        :options="['alive', 'dead', 'unknown']"
         name="status"
-        @updateSelectedValue="(newStatus) => filterResults(newStatus, 'status')"
+        @updateSelectedValue="(newStatus: string) => filterResults(newStatus, 'status')"
       />
       <SearchFilter
-        :currentSelectedValue="currentQueryStateStore.currentGender"
-        :options="['female', 'male', 'genderless', 'unknow']"
+        :currentSelectedValue="currentGender"
+        :options="['female', 'male', 'genderless', 'unknown']"
         name="gender"
-        @updateSelectedValue="(newGender) => filterResults(newGender, 'gender')"
+        @updateSelectedValue="(newGender: string) => filterResults(newGender, 'gender')"
       />
     </div>
     <div class="characters__list-container">
       <p v-if="!queryResults">No data available.</p>
-      <p v-else-if="queryResults.error">No characters found.</p>
-      <CharacterList v-else-if="queryResults.results" :characters="queryResults.results" />
+      <p v-else-if="'error' in queryResults">No characters found.</p>
+      <CharacterList v-else-if="'results' in queryResults" :characters="queryResults.results" />
     </div>
     <Pagination
-      v-if="queryResults?.info?.next || queryResults?.info?.prev"
-      :currentPage="Number(currentQueryStateStore.currentPage)"
+      v-if="totalPages && totalPages > 1"
+      :currentPage="Number(currentPage)"
       :totalPages
-      @display-prev-page="filterResults(Number(currentQueryStateStore.currentPage) - 1, 'page')"
-      @display-next-page="filterResults(Number(currentQueryStateStore.currentPage) + 1, 'page')"
+      @display-prev-page="filterResults(String(Number(currentPage) - 1), 'page')"
+      @display-next-page="filterResults(String(Number(currentPage) + 1), 'page')"
     />
   </div>
 </template>
